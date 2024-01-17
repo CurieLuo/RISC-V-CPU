@@ -11,13 +11,13 @@ module ICache#(
 
   // output instruction
   input wire [31:0] iu_to_ic_pc,
-  output wire ic_to_iu_rdy,
+  output wire ic_to_iu_ready,
   output wire [31:0] ic_to_iu_inst,
 
   // input instruction from mem
   output reg ic_to_mc_request,
   output reg [31:0] ic_to_mc_pc, // fetch from mem
-  input wire mc_to_ic_rdy,
+  input wire mc_to_ic_ready,
   input wire [31:0] mc_to_ic_inst, // instruction
   
 );
@@ -30,7 +30,7 @@ module ICache#(
   reg [31:0] data [SET_SIZE-1:0];
 
   wire hit = valid[iu_to_ic_pc[SET_WIDTH+2-1:2]]&&tag[SET_WIDTH+2-1:2]==iu_to_ic_pc[RAM_ADDR_WIDTH-1:SET_WIDTH+2];
-  assign ic_to_iu_rdy = hit||mc_to_ic_rdy&&ic_to_mc_pc==iu_to_ic_pc; // TODO
+  assign ic_to_iu_ready = hit||mc_to_ic_ready&&ic_to_mc_pc==iu_to_ic_pc; // TODO
   assign ic_to_iu_inst = hit?data[iu_to_ic_pc[SET_WIDTH+2-1:2]]:mc_to_ic_inst;
 
   integer i;
@@ -42,7 +42,7 @@ module ICache#(
     else if (rdy_in) begin
        // if(hit) ic_to_mc_request<=0;
       if (!hit) begin
-        if (ic_to_iu_rdy) begin // TODO ic_to_mc_request && ~mc_to_ic_rdy
+        if (ic_to_iu_ready) begin // TODO ic_to_mc_request && ~mc_to_ic_ready
           valid[iu_to_ic_pc[SET_WIDTH+2-1:2]]<=1;
           tag[iu_to_ic_pc[SET_WIDTH+2-1:2]]<=iu_to_ic_pc
           data[iu_to_ic_pc[SET_WIDTH+2-1:2]]<=mc_to_ic_inst;

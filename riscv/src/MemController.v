@@ -15,10 +15,10 @@ module MemController #(
 
   input wire ic_to_mc_request,
   input wire [31:0] ic_to_mc_pc,
-  output reg mc_to_ic_rdy,
+  output reg mc_to_ic_ready,
 
   input wire lsb_to_mc_request,
-  output reg mc_to_lsb_rdy,
+  output reg mc_to_lsb_ready,
 );
 
   reg [1:0] state;
@@ -29,8 +29,8 @@ module MemController #(
       state<=`STAT_IDLE;
       byte_index<=0;
       mc_dout<=0;
-      mc_to_ic_rdy<=0;
-      mc_to_lsb_rdy<=0;
+      mc_to_ic_ready<=0;
+      mc_to_lsb_ready<=0;
       mc_to_mem_dout<=0;
       mc_to_mem_addr<=0;
     end
@@ -64,7 +64,7 @@ module MemController #(
             mc_dout[31:24]<=mem_to_mc_din;
             byte_index<=2'b00;
             state<=`STAT_IDLE;
-            mc_to_ic_rdy<=1;
+            mc_to_ic_ready<=1;
           end
           endcase
         end
