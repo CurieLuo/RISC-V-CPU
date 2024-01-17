@@ -34,10 +34,7 @@ module MemController #(
       mc_to_mem_dout<=0;
       mc_to_mem_addr<=0;
     end
-    else if (~rdy_in) begin
-      
-    end
-    else begin
+    else if (rdy_in) begin
       case (state)
         `STAT_IDLE: begin
           if (lsb_to_mc_request) begin

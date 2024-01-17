@@ -38,9 +38,10 @@ module ICache#(
     if (rst_in) begin
       ic_to_mc_request<=0;
       for (i=0;i<SET_SIZE;i=i+1) valid[i]<=0;
-    end else if (rdy_in) begin
+    end
+    else if (rdy_in) begin
        // if(hit) ic_to_mc_request<=0;
-      if (~hit) begin
+      if (!hit) begin
         if (ic_to_iu_rdy) begin // TODO ic_to_mc_request && ~mc_to_ic_rdy
           valid[iu_to_ic_pc[SET_WIDTH+2-1:2]]<=1;
           tag[iu_to_ic_pc[SET_WIDTH+2-1:2]]<=iu_to_ic_pc

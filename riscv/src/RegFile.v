@@ -8,9 +8,16 @@ module RegFile #( parameter ROB_WIDTH
   input wire clr_in,
 
   // update new dependency when a new instruction is issued
-  input wire issue_ready,
+  input wire issue_rdy,
   input wire [4:0] issue_rd_id,
-  input wire [ROB_WIDTH-1:0] issue_rob_idx
+  input wire [ROB_WIDTH-1:0] issue_rob_idx,
+
+  input wire [4:0] iu_to_rf_rs1_id,
+  output wire [ROB_WIDTH-1:0] rf_to_iu_rs1_depend,
+  output wire [31:0] rf_to_iu_rs1_val,
+  input wire [4:0] iu_to_rf_rs2_id,
+  output wire [ROB_WIDTH-1:0] rf_to_iu_rs2_depend,
+  output wire [31:0] rf_to_iu_rs2_val,
 
   input wire rob_to_rf_commit,
   input wire [4:0] rob_to_rf_reg_id,
@@ -21,6 +28,12 @@ module RegFile #( parameter ROB_WIDTH
   
   reg [31:0] val[31:0];
   reg [ROB_WIDTH-1:0] depend[31:0];
+  
+  assign rf_to_iu_rs1_depend=depend[iu_to_rf_rs1_id];
+  assign rf_to_iu_rs1_val=val[iu_to_rf_rs1_id];
+  assign rf_to_iu_rs2_depend=depend[iu_to_rf_rs2_id];
+  assign rf_to_iu_rs2_val=val[iu_to_rf_rs2_id];
+
   integer i;
   always @(posedge clk_in) begin
     if (rst_in) begin
@@ -36,14 +49,12 @@ module RegFile #( parameter ROB_WIDTH
         end
       end
       if (rob_to_rf_commit && rob_to_rf_reg_id!=0) begin
-        if (depend[rob_to_rf_reg_id]==rob_to_rf_rob_idx) begin
+        if (depend[rob_to_rf_reg_id]==rob_to_rf_rob_idx&&!(issue_rdy&&issue_rd==rob_to_rf_rob_idx)) begin
           depend[rob_to_rf_reg_id]<=0;
-          //TODO
         end
         val[rob_to_rf_reg_id]<=rob_to_rf_reg_val;
       end
-      // TODO order
-      if (issue_ready&&issue_rd_id!=0) depend[issue_rd_id]=issue_rob_idx;
+      if (issue_rdy&&issue_rd_id!=0) depend[issue_rd_id]<=issue_rob_idx;
     end
   end
 
