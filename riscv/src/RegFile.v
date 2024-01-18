@@ -10,7 +10,7 @@ module RegFile #( parameter ROB_WIDTH
   // update new dependency when a new instruction is issued
   input wire issue_ready,
   input wire [4:0] issue_rd_id,
-  input wire [ROB_WIDTH-1:0] issue_rob_idx,
+  input wire [ROB_WIDTH-1:0] issue_rob_index,
 
   input wire [4:0] iu_to_rf_rs1_id,
   output wire [ROB_WIDTH-1:0] rf_to_iu_rs1_depend,
@@ -22,8 +22,7 @@ module RegFile #( parameter ROB_WIDTH
   input wire rob_to_rf_ready,
   input wire [4:0] rob_to_rf_reg_id,
   input wire [31:0] rob_to_rf_reg_val,
-  input wire [ROB_WIDTH-1:0] rob_to_rf_rob_idx,
-
+  input wire [ROB_WIDTH-1:0] rob_to_rf_rob_index
 );
   
   reg [31:0] val[31:0];
@@ -49,12 +48,12 @@ module RegFile #( parameter ROB_WIDTH
         end
       end
       if (rob_to_rf_ready && rob_to_rf_reg_id!=0) begin
-        if (depend[rob_to_rf_reg_id]==rob_to_rf_rob_idx&&!(issue_ready&&issue_rd==rob_to_rf_rob_idx)) begin
+        if (depend[rob_to_rf_reg_id]==rob_to_rf_rob_index&&!(issue_ready&&issue_rd==rob_to_rf_rob_index)) begin
           depend[rob_to_rf_reg_id]<=0;
         end
         val[rob_to_rf_reg_id]<=rob_to_rf_reg_val;
       end
-      if (issue_ready&&issue_rd_id!=0) depend[issue_rd_id]<=issue_rob_idx;
+      if (issue_ready&&issue_rd_id!=0) depend[issue_rd_id]<=issue_rob_index;
     end
   end
 

@@ -1,6 +1,6 @@
 `include "consts.v"
 
-module BranchPredictor#(parameter BHT_WIDTH=6)(
+module BranchPredictor#(parameter BHT_WIDTH)(
   input wire                      clk_in,
   input wire                      rst_in,
   input wire                      rdy_in,
@@ -11,7 +11,7 @@ module BranchPredictor#(parameter BHT_WIDTH=6)(
 
   input wire rob_to_bp_ready,
   input wire [31:0] rob_to_bp_pc,
-  input wire rob_to_bp_actual_br,
+  input wire rob_to_bp_actual_br
 )
   parameter BHT_SIZE=2**BHT_WISTH;
   reg [1:0] bht [BHT_SIZE-1:0]; // branch history table

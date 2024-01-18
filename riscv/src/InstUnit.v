@@ -20,32 +20,30 @@ module InstUnit #(parameter ROB_WIDTH
   input wire [ROB_WIDTH-1:0] rf_to_iu_rs2_depend,
 
   input wire rob_full,
-  input wire [ROB_WIDTH-1:0] rob_new_idx,
+  input wire [ROB_WIDTH-1:0] rob_new_index,
   output wire [ROB_WIDTH-1:0] iu_to_rob_rs1_depend,
   input wire rob_to_iu_rs1_ready,
   input wire [31:0] rob_to_iu_val1,
   output wire [ROB_WIDTH-1:0] iu_to_rob_rs2_depend,
   input wire rob_to_iu_rs2_ready,
   input wire [31:0] rob_to_iu_val2,
+  input wire [31:0] rob_to_iu_actual_pc,
 
   input wire lsb_full,
   input wire lsb_ready,
-  input wire [ROB_WIDTH-1:0] lsb_rob_idx,
+  input wire [ROB_WIDTH-1:0] lsb_rob_index,
   input wire [31:0] lsb_val,
-  //TODO!
+  
   input wire rs_full,
   input wire rs_ready,
-  input wire [ROB_WIDTH-1:0] rs_rob_idx,
+  input wire [ROB_WIDTH-1:0] rs_rob_index,
   input wire [31:0] rs_val,
-  input wire rs_actual_br,
-  input wire [31:0] rs_pc_jump,
-  //TODO!
 
   output reg issue_ready,
   output reg issue_rs_ready,
   output reg issue_lsb_ready,
   output reg [4:0] issue_rd_id,
-  output reg [ROB_WIDTH-1:0] issue_rob_idx, // the index of the entry to be filled
+  output reg [ROB_WIDTH-1:0] issue_rob_index, // the index of the entry to be filled
   output reg [31:0] issue_val1, // val1 and val2 might be immediates
   output reg [ROB_WIDTH-1:0] issue_rs1_depend,
   output reg [31:0] issue_val2,
@@ -81,8 +79,7 @@ module InstUnit #(parameter ROB_WIDTH
     else if (rdy_in) begin
       if (clr_in)begin
         inst_ready<=0;
-        pc<=//rob
-        //TODO
+        pc<=rob_to_iu_actual_pc;
       end
       else if (!stall) begin
         pc<=prediction?pc_jump:pc+4;//TODO!!!
@@ -104,17 +101,19 @@ module InstUnit #(parameter ROB_WIDTH
   wire [31:0] imm_B = {{20{inst[31]}}, inst[7], inst[30:25], inst[11:8], 1'b0};
   wire [31:0] imm_I = {{20{inst[31]}}, inst[31:20]};
   wire [31:0] imm_S = {{20{inst[31]}}, inst[31:25], inst[11:7]};
-  wire [31:0] imm_shamt = {27{0},inst[24:20]};
+  wire [31:0] imm_shamt = {27'b0,inst[24:20]};
 
   always@(*) begin //instruction decode & issue
   stall=0;
   issue_ready=0;
-  //TODO
+  issue_rs_ready=0;
+  issue_lsb_ready=0;
+  
   if (rst_in||!rdy_in||clr_in||rob_full||rs_full||lsb_full) stall = 1; // optimize (rs,lsb)
   if(!stall&&inst_ready) begin
 
     issue_rd_id=inst[11:7];
-    issue_rob_idx=0;
+    issue_rob_index=0;
     issue_op_id=`OP_NOP;
     issue_rd=inst[11:7];
     issue_rs1_depend=0;
@@ -122,17 +121,20 @@ module InstUnit #(parameter ROB_WIDTH
     issue_val1=0;
     issue_val2=0;
     issue_pc=pc;
-    issue_rob_idx=rob_new_idx;
+    issue_rob_index=rob_new_index;
     issue_prediction=prediction;
-    issue_opcode=opcode;//TODO wire
+    issue_opcode=opcode;//optimize? (wire)
 
     inst_ready=0;issue_ready=1; // optimize (rs,lsb)
     if (rf_to_iu_rs1_depend==0) issue_val1=rf_to_iu_val1;
     else if (rob_to_iu_rs1_ready) issue_val1=rob_to_iu_val1;
+    else if (lsb_ready&&lsb_rob_index==rf_to_iu_rs1_depend) issue_val1=lsb_val;
+    else if (rs_ready&&rs_rob_index==rf_to_iu_rs1_depend) issue_val1=rs_val;
     else issue_rs1_depend=rf_to_iu_rs1_depend;
-    //TODO!!! rs,lsb
     if (rf_to_iu_rs2_depend==0) issue_val2=rf_to_iu_val2;
     else if (rob_to_iu_rs2_ready) issue_val2=rob_to_iu_val2;
+    else if (lsb_ready&&lsb_rob_index==rf_to_iu_rs2_depend) issue_val2=lsb_val;
+    else if (rs_ready&&rs_rob_index==rf_to_iu_rs2_depend) issue_val2=rs_val;
     else issue_rs2_depend=rf_to_iu_rs2_depend;
 
     case (opcode)
@@ -165,8 +167,8 @@ module InstUnit #(parameter ROB_WIDTH
         issue_op_id=`OP_JALR;
         issue_rs2_depend=0;
         issue_offset=imm_I;
-        pc_jump=pc+4; // TODO
-        //stall=1;
+        pc_jump=pc+4;
+        //optimize: stall=1;
       end
       `OPCODE_B: begin
         issue_rs_ready=1;

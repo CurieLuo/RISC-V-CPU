@@ -7,7 +7,7 @@ module ReorderBuffer #(parameter ROB_WIDTH
   input wire                      rdy_in,
   output reg clr_in,
   output reg rob_full,
-  output reg rob_new_idx,
+  output reg rob_new_index,
 
   input wire [ROB_WIDTH-1:0] iu_to_rob_rs1_depend,
   output wire rob_to_iu_rs1_ready,
@@ -15,13 +15,14 @@ module ReorderBuffer #(parameter ROB_WIDTH
   input wire [ROB_WIDTH-1:0] iu_to_rob_rs2_depend,
   output wire rob_to_iu_rs2_ready,
   output wire [31:0] rob_to_iu_val2,
+  output reg [31:0] rob_to_iu_actual_pc,
 
   input wire lsb_ready,
-  input wire [ROB_WIDTH-1:0] lsb_rob_idx,
+  input wire [ROB_WIDTH-1:0] lsb_rob_index,
   input wire [31:0] lsb_val,
 
   input wire rs_ready,
-  input wire [ROB_WIDTH-1:0] rs_rob_idx,
+  input wire [ROB_WIDTH-1:0] rs_rob_index,
   input wire [31:0] rs_val,
   input wire rs_actual_br,
   input wire [31:0] rs_pc_jump,
@@ -36,7 +37,7 @@ module ReorderBuffer #(parameter ROB_WIDTH
   output reg rob_to_rf_ready, // commit
   output reg [4:0] rob_to_rf_reg_id,
   output reg [31:0] rob_to_rf_reg_val,
-  output reg [ROB_WIDTH-1:0] rob_to_rf_rob_idx,
+  output reg [ROB_WIDTH-1:0] rob_to_rf_rob_index,
 
   output reg rob_to_bp_ready,
   output reg [31:0] rob_to_bp_pc,
@@ -64,7 +65,6 @@ module ReorderBuffer #(parameter ROB_WIDTH
   assign rob_to_iu_rs2_ready=ready[iu_to_rob_rs2_depend];
   assign rob_to_iu_val2=val[iu_to_rob_rs2_depend];
 
-  // integer i;
   always @(posedge clk_in) begin
     if (rst_in||clr_in) begin
       clr_in<=0;
@@ -72,20 +72,17 @@ module ReorderBuffer #(parameter ROB_WIDTH
       tail<=1;
       rob_to_bp_ready<=0;
       rob_to_rf_ready<=0;
-      // for(i=0;i<ROB_SIZE;i=i+1) begin
-      //   ready[i]<=0;
-      // end
     end
     else if (rdy_in) begin
       if (lsb_ready) begin
-        ready[lsb_rob_idx]<=1;
-        val[lsb_rob_idx]<=lsb_val;
+        ready[lsb_rob_index]<=1;
+        val[lsb_rob_index]<=lsb_val;
       end
       if (rs_ready) begin
-        ready[rs_rob_idx]<=1;
-        val[rs_rob_idx]<=rs_val;
-        actual_br[rs_rob_idx]<=rs_actual_br;
-        pc_jump[rs_rob_idx]<=rs_pc_jump;
+        ready[rs_rob_index]<=1;
+        val[rs_rob_index]<=rs_val;
+        actual_br[rs_rob_index]<=rs_actual_br;
+        pc_jump[rs_rob_index]<=rs_pc_jump;
       end
       if (issue_ready) begin
         ready[next_tail]<=0;
@@ -102,7 +99,7 @@ module ReorderBuffer #(parameter ROB_WIDTH
         rob_to_rf_ready<=1;
         rob_to_rf_reg_id<=rd_id[next_head];
         rob_to_rf_reg_val<=val[next_head];
-        rob_to_rf_rob_idx<=next_head;
+        rob_to_rf_rob_index<=next_head;
         //wrong prediction
         if (op_id[next_head]==`OP_JALR||pred_br[next_head]!=actual_br[next_head]) begin
           clr_in<=1;

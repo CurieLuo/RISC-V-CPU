@@ -8,7 +8,7 @@ module ReservationStation#(parameter ROB_WIDTH,parameter RS_WIDTH=4)(
   output wire rs_full,
   
   input wire issue_rs_ready,
-  input wire [ROB_WIDTH-1:0] issue_rob_idx,
+  input wire [ROB_WIDTH-1:0] issue_rob_index,
   input wire [31:0] issue_val1, // val1 and val2 might be immediates
   input wire [ROB_WIDTH-1:0] issue_rs1_depend,
   input wire [31:0] issue_val2,
@@ -20,27 +20,27 @@ module ReservationStation#(parameter ROB_WIDTH,parameter RS_WIDTH=4)(
 
   // broadcast from LSB
   input wire lsb_ready,
-  input wire [ROB_WIDTH-1:0] lsb_rob_idx,
+  input wire [ROB_WIDTH-1:0] lsb_rob_index,
   input wire [31:0] lsb_val,
 
   output reg rs_ready,
-  output reg [ROB_WIDTH-1:0] rs_rob_idx,
+  output reg [ROB_WIDTH-1:0] rs_rob_index,
   output reg [31:0] rs_val,
   output reg rs_actual_br,
-  output reg [31:0] rs_pc_jump,
+  output reg [31:0] rs_pc_jump
 
 )
   parameter RS_SIZE=2**RS_WIDTH;
   reg [RS_SIZE-1:0] busy;
-  reg op_id[RS_SIZE-1:0];
-  reg opcode[RS_SIZE-1:0];//can be optimized
+  reg [5:0] op_id[RS_SIZE-1:0];
+  reg [6:0] opcode[RS_SIZE-1:0];//can be optimized
   reg [31:0] val1[RS_SIZE-1:0];
   reg [ROB_WIDTH-1:0] depend1[RS_SIZE-1:0];
   wire [RS_SIZE-1:0] depend1_bool;
   reg [31:0] val2[RS_SIZE-1:0];
   reg [ROB_WIDTH-1:0] depend2[RS_SIZE-1:0];
   wire [RS_SIZE-1:0] depend2_bool;
-  reg [ROB_WIDTH-1:0] rob_idx[RS_SIZE-1:0];
+  reg [ROB_WIDTH-1:0] rob_index[RS_SIZE-1:0];
   reg [31:0] offset[RS_SIZE-1:0];
   reg [31:0] pc[RS_SIZE-1:0];
 
@@ -154,7 +154,7 @@ module ReservationStation#(parameter ROB_WIDTH,parameter RS_WIDTH=4)(
           rs_val=val1[ready_entry]-val2[ready_entry];
         end
       endcase
-      rs_rob_idx=rob_idx[ready_entry];
+      rs_rob_index=rob_index[ready_entry];
       busy[ready_entry]=0;
     end
   end
@@ -168,12 +168,12 @@ module ReservationStation#(parameter ROB_WIDTH,parameter RS_WIDTH=4)(
     else if (rdy_in) begin
       if (rs_ready) begin
         for(int i=0;i<RS_SIZE;i=i+1)begin
-          if (busy[i]&&depend1[i]==rs_rob_idx) begin
+          if (busy[i]&&depend1[i]==rs_rob_index) begin
             val1[i]<=rs_val;
             depend1[i]<=0;
             // depend1_bool[i]<=0;
           end
-          if (busy[i]&&depend2[i]==rs_rob_idx) begin
+          if (busy[i]&&depend2[i]==rs_rob_index) begin
             val2[i]<=rs_val;
             depend2[i]<=0;
             // depend2_bool[i]<=0;
@@ -182,12 +182,12 @@ module ReservationStation#(parameter ROB_WIDTH,parameter RS_WIDTH=4)(
       end
       if (lsb_ready) begin
         for(int i=0;i<RS_SIZE;i=i+1)begin
-          if (busy[i]&&depend1[i]==lsb_rob_idx) begin
+          if (busy[i]&&depend1[i]==lsb_rob_index) begin
             val1[i]<=lsb_val;
             depend1[i]<=0;
             // depend1_bool[i]<=0;
           end
-          if (busy[i]&&depend2[i]==lsb_rob_idx) begin
+          if (busy[i]&&depend2[i]==lsb_rob_index) begin
             val2[i]<=lsb_val;
             depend2[i]<=0;
             // depend2_bool[i]<=0;
@@ -206,7 +206,7 @@ module ReservationStation#(parameter ROB_WIDTH,parameter RS_WIDTH=4)(
         // depend2_bool[vacant_entry]<=issue_depend2!=0;
         offset[vacant_entry]<=issue_offset;
         pc[vacant_entry]<=issue_pc;
-        rob_idx[vacant_entry]<=issue_rob_idx;
+        rob_index[vacant_entry]<=issue_rob_index;
         busy[vacant_entry]<=1;
       end
       if (ready!=0) begin
