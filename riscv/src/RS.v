@@ -1,6 +1,6 @@
 `include "consts.v"
 
-module ReservationStation#(parameter ROB_WIDTH,parameter RS_WIDTH=4)(
+module ReservationStation#(parameter ROB_WIDTH,parameter RS_WIDTH)(
   input wire                      clk_in,
   input wire                      rst_in,
   input wire                      rdy_in,
@@ -16,7 +16,7 @@ module ReservationStation#(parameter ROB_WIDTH,parameter RS_WIDTH=4)(
   input wire [5:0] issue_op_id,
   input wire [6:0] issue_opcode,
   input wire [31:0] issue_pc,
-  input wire [31:0] issue_offset,
+  input wire [31:0] issue_offset,s
 
   // broadcast from LSB
   input wire lsb_ready,
@@ -28,8 +28,8 @@ module ReservationStation#(parameter ROB_WIDTH,parameter RS_WIDTH=4)(
   output reg [31:0] rs_val,
   output reg rs_actual_br,
   output reg [31:0] rs_pc_jump
+);
 
-)
   parameter RS_SIZE=2**RS_WIDTH;
   reg [RS_SIZE-1:0] busy;
   reg [5:0] op_id[RS_SIZE-1:0];

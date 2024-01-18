@@ -1,7 +1,6 @@
 `include "consts.v"
 
-module ReorderBuffer #(parameter ROB_WIDTH
-) (
+module ReorderBuffer #(parameter ROB_WIDTH) (
   input wire                      clk_in,
   input wire                      rst_in,
   input wire                      rdy_in,
@@ -42,7 +41,7 @@ module ReorderBuffer #(parameter ROB_WIDTH
   output reg rob_to_bp_ready,
   output reg [31:0] rob_to_bp_pc,
   output reg rob_to_bp_actual_br
-)
+);
 
   parameter ROB_SIZE=2**ROB_WIDTH;
   reg [ROB_WIDTH-1:0] head, tail; // (head,tail]

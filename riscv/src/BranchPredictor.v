@@ -6,14 +6,13 @@ module BranchPredictor#(parameter BHT_WIDTH)(
   input wire                      rdy_in,
 
   input wire [31:0] iu_to_bp_pc,
-  input wire [31:0] iu_to_bp_inst,
   output wire bp_to_iu_prediction,
 
   input wire rob_to_bp_ready,
   input wire [31:0] rob_to_bp_pc,
   input wire rob_to_bp_actual_br
-)
-  parameter BHT_SIZE=2**BHT_WISTH;
+);
+  parameter BHT_SIZE=2**BHT_WIDTH;
   reg [1:0] bht [BHT_SIZE-1:0]; // branch history table
   wire [BHT_WIDTH-1:0] hash = rob_to_bp_pc[BHT_WIDTH+1:2];
   assign bp_to_iu_prediction = bht[iu_to_bp_pc[BHT_WIDTH+1:2]][1];

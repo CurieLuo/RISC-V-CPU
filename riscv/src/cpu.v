@@ -33,7 +33,7 @@ module cpu(
   parameter ROB_WIDTH=4;
   parameter RS_WIDTH=4;
   parameter LSB_WIDTH=4;
-  parameter RAM_ADDR_WIDTH=18;//TODO
+  parameter RAM_ADDR_WIDTH=18;//TODO!
   parameter ICACHE_SET_WIDTH=8;
   parameter BHT_WIDTH=6;
 
@@ -70,8 +70,6 @@ module cpu(
   wire rs_ready;
   wire [ROB_WIDTH-1:0] rs_rob_index;
   wire [31:0] rs_val;
-  // wire rs_actual_br;
-  // wire [31:0] rs_pc_jump;
 
   wire issue_ready;
   wire issue_rs_ready;
@@ -93,11 +91,6 @@ module cpu(
 
   //memory controller
   wire [31:0] mc_dout;
-  
-  wire [31:0] mc_to_mem_addr;
-  wire mc_to_mem_wr;
-  wire [7:0] mem_to_mc_din;
-  wire [7:0] mc_to_mem_dout;
 
   wire ic_to_mc_ready;
   wire [31:0] ic_to_mc_pc;
@@ -226,10 +219,10 @@ module cpu(
     .mc_dout(mc_dout),
 
     .io_buffer_full(io_buffer_full),
-    .mc_to_mem_addr(mc_to_mem_addr),
-    .mc_to_mem_wr(mc_to_mem_wr),
-    .mem_to_mc_din(mem_to_mc_din),
-    .mc_to_mem_dout(mc_to_mem_dout),
+    .mc_to_mem_addr(mem_a),
+    .mc_to_mem_wr(mem_wr),
+    .mem_to_mc_din(mem_dout),
+    .mc_to_mem_dout(mem_din),
 
     .ic_to_mc_ready(ic_to_mc_ready),
     .ic_to_mc_pc(ic_to_mc_pc),
@@ -250,7 +243,6 @@ module cpu(
     .rdy_in(rdy_in),
 
     .iu_to_bp_pc(iu_to_bp_pc),
-    .iu_to_bp_inst(iu_to_bp_inst),
     .bp_to_iu_prediction(bp_to_iu_prediction),
 
     .rob_to_bp_ready(rob_to_bp_ready),
