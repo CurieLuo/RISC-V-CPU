@@ -1,6 +1,6 @@
 `include "consts.v"
 
-module ReservationStation#(parameter ROB_WIDTH,parameter RS_WIDTH)(
+module ReservationStation#(parameter ROB_WIDTH=4,parameter RS_WIDTH=4)(
   input wire                      clk_in,
   input wire                      rst_in,
   input wire                      rdy_in,
@@ -10,13 +10,13 @@ module ReservationStation#(parameter ROB_WIDTH,parameter RS_WIDTH)(
   input wire issue_rs_ready,
   input wire [ROB_WIDTH-1:0] issue_rob_index,
   input wire [31:0] issue_val1, // val1 and val2 might be immediates
-  input wire [ROB_WIDTH-1:0] issue_rs1_depend,
+  input wire [ROB_WIDTH-1:0] issue_depend1,
   input wire [31:0] issue_val2,
-  input wire [ROB_WIDTH-1:0] issue_rs2_depend,
+  input wire [ROB_WIDTH-1:0] issue_depend2,
   input wire [5:0] issue_op_id,
   input wire [6:0] issue_opcode,
   input wire [31:0] issue_pc,
-  input wire [31:0] issue_offset,s
+  input wire [31:0] issue_offset,
 
   // broadcast from LSB
   input wire lsb_ready,
@@ -167,7 +167,7 @@ module ReservationStation#(parameter ROB_WIDTH,parameter RS_WIDTH)(
     end
     else if (rdy_in) begin
       if (rs_ready) begin
-        for(int i=0;i<RS_SIZE;i=i+1)begin
+        for(i=0;i<RS_SIZE;i=i+1)begin
           if (busy[i]&&depend1[i]==rs_rob_index) begin
             val1[i]<=rs_val;
             depend1[i]<=0;
@@ -181,7 +181,7 @@ module ReservationStation#(parameter ROB_WIDTH,parameter RS_WIDTH)(
         end
       end
       if (lsb_ready) begin
-        for(int i=0;i<RS_SIZE;i=i+1)begin
+        for(i=0;i<RS_SIZE;i=i+1)begin
           if (busy[i]&&depend1[i]==lsb_rob_index) begin
             val1[i]<=lsb_val;
             depend1[i]<=0;
@@ -211,7 +211,7 @@ module ReservationStation#(parameter ROB_WIDTH,parameter RS_WIDTH)(
       end
       if (ready!=0) begin
         rs_ready<=1;
-        rs_busy[ready_entry]<=0;
+        busy[ready_entry]<=0;
       end
       else rs_ready<=0;
     end

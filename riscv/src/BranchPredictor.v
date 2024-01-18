@@ -1,6 +1,6 @@
 `include "consts.v"
 
-module BranchPredictor#(parameter BHT_WIDTH)(
+module BranchPredictor#(parameter BHT_WIDTH=6)(
   input wire                      clk_in,
   input wire                      rst_in,
   input wire                      rdy_in,

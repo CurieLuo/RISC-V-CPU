@@ -46,17 +46,17 @@ module cpu(
 
   wire [4:0] iu_to_rf_rs1_id;
   wire [31:0] rf_to_iu_val1;
-  wire [ROB_WIDTH-1:0] rf_to_iu_rs1_depend;
+  wire [ROB_WIDTH-1:0] rf_to_iu_depend1;
   wire [4:0] iu_to_rf_rs2_id;
   wire [31:0] rf_to_iu_val2;
-  wire [ROB_WIDTH-1:0] rf_to_iu_rs2_depend;
+  wire [ROB_WIDTH-1:0] rf_to_iu_depend2;
 
   wire rob_full;
   wire [ROB_WIDTH-1:0] rob_new_index;
-  wire [ROB_WIDTH-1:0] iu_to_rob_rs1_depend;
+  wire [ROB_WIDTH-1:0] iu_to_rob_depend1;
   wire rob_to_iu_rs1_ready;
   wire [31:0] rob_to_iu_val1;
-  wire [ROB_WIDTH-1:0] iu_to_rob_rs2_depend;
+  wire [ROB_WIDTH-1:0] iu_to_rob_depend2;
   wire rob_to_iu_rs2_ready;
   wire [31:0] rob_to_iu_val2;
   wire [31:0] rob_to_iu_actual_pc;
@@ -77,9 +77,9 @@ module cpu(
   wire [4:0] issue_rd_id;
   wire [ROB_WIDTH-1:0] issue_rob_index;
   wire [31:0] issue_val1;
-  wire [ROB_WIDTH-1:0] issue_rs1_depend;
+  wire [ROB_WIDTH-1:0] issue_depend1;
   wire [31:0] issue_val2;
-  wire [ROB_WIDTH-1:0] issue_rs2_depend;
+  wire [ROB_WIDTH-1:0] issue_depend2;
   wire [5:0] issue_op_id;
   wire [6:0] issue_opcode;
   wire [31:0] issue_pc;
@@ -101,7 +101,6 @@ module cpu(
   wire [1:0] lsb_to_mc_len;
   wire [31:0] lsb_to_mc_addr;
   wire [31:0] lsb_to_mc_data;
-  wire [31:0] mc_to_lsb_data;
   wire mc_to_lsb_ready;
 
   //reorder buffer
@@ -128,17 +127,17 @@ module cpu(
 
     .iu_to_rf_rs1_id(iu_to_rf_rs1_id),
     .rf_to_iu_val1(rf_to_iu_val1),
-    .rf_to_iu_rs1_depend(rf_to_iu_rs1_depend),
+    .rf_to_iu_depend1(rf_to_iu_depend1),
     .iu_to_rf_rs2_id(iu_to_rf_rs2_id),
     .rf_to_iu_val2(rf_to_iu_val2),
-    .rf_to_iu_rs2_depend(rf_to_iu_rs2_depend),
+    .rf_to_iu_depend2(rf_to_iu_depend2),
 
     .rob_full(rob_full),
     .rob_new_index(rob_new_index),
-    .iu_to_rob_rs1_depend(iu_to_rob_rs1_depend),
+    .iu_to_rob_depend1(iu_to_rob_depend1),
     .rob_to_iu_rs1_ready(rob_to_iu_rs1_ready),
     .rob_to_iu_val1(rob_to_iu_val1),
-    .iu_to_rob_rs2_depend(iu_to_rob_rs2_depend),
+    .iu_to_rob_depend2(iu_to_rob_depend2),
     .rob_to_iu_rs2_ready(rob_to_iu_rs2_ready),
     .rob_to_iu_val2(rob_to_iu_val2),
     .rob_to_iu_actual_pc(rob_to_iu_actual_pc),
@@ -159,9 +158,9 @@ module cpu(
     .issue_rd_id(issue_rd_id),
     .issue_rob_index(issue_rob_index), // the index of the entry to be filled
     .issue_val1(issue_val1), // val1 and val2 might be immediates
-    .issue_rs1_depend(issue_rs1_depend),
+    .issue_depend1(issue_depend1),
     .issue_val2(issue_val2),
-    .issue_rs2_depend(issue_rs2_depend),
+    .issue_depend2(issue_depend2),
     .issue_op_id(issue_op_id),
     .issue_opcode(issue_opcode),
     .issue_pc(issue_pc),
@@ -184,7 +183,7 @@ module cpu(
     .ic_to_mc_ready(ic_to_mc_ready),
     .ic_to_mc_pc(ic_to_mc_pc),
     .mc_to_ic_ready(mc_to_ic_ready),
-    .mc_to_ic_inst(mc_to_ic_inst)
+    .mc_to_ic_inst(mc_dout)
   );
 
   RegFile#(.ROB_WIDTH(ROB_WIDTH)) reg_file(
@@ -198,10 +197,10 @@ module cpu(
     .issue_rob_index(issue_rob_index),
 
     .iu_to_rf_rs1_id(iu_to_rf_rs1_id),
-    .rf_to_iu_rs1_depend(rf_to_iu_rs1_depend),
+    .rf_to_iu_depend1(rf_to_iu_depend1),
     .rf_to_iu_val1(rf_to_iu_val1),
     .iu_to_rf_rs2_id(iu_to_rf_rs2_id),
-    .rf_to_iu_rs2_depend(rf_to_iu_rs2_depend),
+    .rf_to_iu_depend2(rf_to_iu_depend2),
     .rf_to_iu_val2(rf_to_iu_val2),
 
     .rob_to_rf_ready(rob_to_rf_ready),
@@ -233,7 +232,6 @@ module cpu(
     .lsb_to_mc_len(lsb_to_mc_len),
     .lsb_to_mc_addr(lsb_to_mc_addr),
     .lsb_to_mc_data(lsb_to_mc_data),
-    .mc_to_lsb_data(mc_to_lsb_data),
     .mc_to_lsb_ready(mc_to_lsb_ready)
   );
 
@@ -258,10 +256,10 @@ module cpu(
     .rob_full(rob_full),
     .rob_new_index(rob_new_index),
 
-    .iu_to_rob_rs1_depend(iu_to_rob_rs1_depend),
+    .iu_to_rob_depend1(iu_to_rob_depend1),
     .rob_to_iu_rs1_ready(rob_to_iu_rs1_ready),
     .rob_to_iu_val1(rob_to_iu_val1),
-    .iu_to_rob_rs2_depend(iu_to_rob_rs2_depend),
+    .iu_to_rob_depend2(iu_to_rob_depend2),
     .rob_to_iu_rs2_ready(rob_to_iu_rs2_ready),
     .rob_to_iu_val2(rob_to_iu_val2),
     .rob_to_iu_actual_pc(rob_to_iu_actual_pc),
@@ -303,9 +301,9 @@ module cpu(
     .issue_lsb_ready(issue_lsb_ready),
     .issue_rob_index(issue_rob_index),
     .issue_val1(issue_val1),
-    .issue_rs1_depend(issue_rs1_depend),
+    .issue_depend1(issue_depend1),
     .issue_val2(issue_val2),
-    .issue_rs2_depend(issue_rs2_depend),
+    .issue_depend2(issue_depend2),
     .issue_op_id(issue_op_id),
     .issue_opcode(issue_opcode),
     .issue_offset(issue_offset),
@@ -323,7 +321,7 @@ module cpu(
     .lsb_to_mc_len(lsb_to_mc_len),
     .lsb_to_mc_addr(lsb_to_mc_addr),
     .lsb_to_mc_data(lsb_to_mc_data),
-    .mc_to_lsb_data(mc_to_lsb_data),
+    .mc_to_lsb_data(mc_dout),
     .mc_to_lsb_ready(mc_to_lsb_ready)
   );
 
@@ -337,9 +335,9 @@ module cpu(
     .issue_rs_ready(issue_rs_ready),
     .issue_rob_index(issue_rob_index),
     .issue_val1(issue_val1),
-    .issue_rs1_depend(issue_rs1_depend),
+    .issue_depend1(issue_depend1),
     .issue_val2(issue_val2),
-    .issue_rs2_depend(issue_rs2_depend),
+    .issue_depend2(issue_depend2),
     .issue_op_id(issue_op_id),
     .issue_opcode(issue_opcode),
     .issue_pc(issue_pc),

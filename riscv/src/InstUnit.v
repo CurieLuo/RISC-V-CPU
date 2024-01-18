@@ -1,5 +1,5 @@
 `include "consts.v"
-module InstUnit #(parameter ROB_WIDTH
+module InstUnit #(parameter ROB_WIDTH=4
 ) (
   input wire                      clk_in,
   input wire                      rst_in,
@@ -14,17 +14,17 @@ module InstUnit #(parameter ROB_WIDTH
   //get rs1 and rs2 (instantly)
   output wire [4:0] iu_to_rf_rs1_id,
   input wire [31:0] rf_to_iu_val1,
-  input wire [ROB_WIDTH-1:0] rf_to_iu_rs1_depend,
+  input wire [ROB_WIDTH-1:0] rf_to_iu_depend1,
   output wire [4:0] iu_to_rf_rs2_id,
   input wire [31:0] rf_to_iu_val2,
-  input wire [ROB_WIDTH-1:0] rf_to_iu_rs2_depend,
+  input wire [ROB_WIDTH-1:0] rf_to_iu_depend2,
 
   input wire rob_full,
   input wire [ROB_WIDTH-1:0] rob_new_index,
-  output wire [ROB_WIDTH-1:0] iu_to_rob_rs1_depend,
+  output wire [ROB_WIDTH-1:0] iu_to_rob_depend1,
   input wire rob_to_iu_rs1_ready,
   input wire [31:0] rob_to_iu_val1,
-  output wire [ROB_WIDTH-1:0] iu_to_rob_rs2_depend,
+  output wire [ROB_WIDTH-1:0] iu_to_rob_depend2,
   input wire rob_to_iu_rs2_ready,
   input wire [31:0] rob_to_iu_val2,
   input wire [31:0] rob_to_iu_actual_pc,
@@ -45,9 +45,9 @@ module InstUnit #(parameter ROB_WIDTH
   output reg [4:0] issue_rd_id,
   output reg [ROB_WIDTH-1:0] issue_rob_index, // the index of the entry to be filled
   output reg [31:0] issue_val1, // val1 and val2 might be immediates
-  output reg [ROB_WIDTH-1:0] issue_rs1_depend,
+  output reg [ROB_WIDTH-1:0] issue_depend1,
   output reg [31:0] issue_val2,
-  output reg [ROB_WIDTH-1:0] issue_rs2_depend,
+  output reg [ROB_WIDTH-1:0] issue_depend2,
   output reg [5:0] issue_op_id,
   output reg [6:0] issue_opcode,
   output reg [31:0] issue_pc,
@@ -64,13 +64,13 @@ module InstUnit #(parameter ROB_WIDTH
   reg stall;
   assign iu_to_bp_pc = pc;
   assign iu_to_ic_pc = pc;
-  wire opcode = inst[6:0];
-  wire prediction=opcode==OPCODE_B?bp_to_iu_prediction:(opcode==`OPCODE_JAL||opcode==`OPCODE_JALR);
+  wire [6:0] opcode = inst[6:0];
+  wire prediction=(opcode==`OPCODE_B)?bp_to_iu_prediction:(opcode==`OPCODE_JAL||opcode==`OPCODE_JALR);
   //TODO
 
   always@(posedge clk_in) begin //instruction fetch
     if (rst_in) begin
-      pc<=8'hfffffffc;//TODO!!!
+      pc<=32'hfffc;//TODO!!!
       inst<=0;
       inst_ready<=0;
       stall<=0;
@@ -92,8 +92,8 @@ module InstUnit #(parameter ROB_WIDTH
     end
   end
 
-  assign iu_to_rob_rs1_depend = rf_to_iu_rs1_depend;
-  assign iu_to_rob_rs2_depend = rf_to_iu_rs2_depend;
+  assign iu_to_rob_depend1 = rf_to_iu_depend1;
+  assign iu_to_rob_depend2 = rf_to_iu_depend2;
 
   wire sub_opcode = inst[14:12];
   assign iu_to_rf_rs1_id=inst[19:15];
@@ -115,9 +115,9 @@ module InstUnit #(parameter ROB_WIDTH
     issue_rd_id=inst[11:7];
     issue_rob_index=0;
     issue_op_id=`OP_NOP;
-    issue_rd=inst[11:7];
-    issue_rs1_depend=0;
-    issue_rs2_depend=0;
+    issue_rd_id=inst[11:7];
+    issue_depend1=0;
+    issue_depend2=0;
     issue_val1=0;
     issue_val2=0;
     issue_pc=pc;
@@ -126,46 +126,46 @@ module InstUnit #(parameter ROB_WIDTH
     issue_opcode=opcode;//optimize? (wire)
 
     inst_ready=0;issue_ready=1; // optimize (rs,lsb)
-    if (rf_to_iu_rs1_depend==0) issue_val1=rf_to_iu_val1;
+    if (rf_to_iu_depend1==0) issue_val1=rf_to_iu_val1;
     else if (rob_to_iu_rs1_ready) issue_val1=rob_to_iu_val1;
-    else if (lsb_ready&&lsb_rob_index==rf_to_iu_rs1_depend) issue_val1=lsb_val;
-    else if (rs_ready&&rs_rob_index==rf_to_iu_rs1_depend) issue_val1=rs_val;
-    else issue_rs1_depend=rf_to_iu_rs1_depend;
-    if (rf_to_iu_rs2_depend==0) issue_val2=rf_to_iu_val2;
+    else if (lsb_ready&&lsb_rob_index==rf_to_iu_depend1) issue_val1=lsb_val;
+    else if (rs_ready&&rs_rob_index==rf_to_iu_depend1) issue_val1=rs_val;
+    else issue_depend1=rf_to_iu_depend1;
+    if (rf_to_iu_depend2==0) issue_val2=rf_to_iu_val2;
     else if (rob_to_iu_rs2_ready) issue_val2=rob_to_iu_val2;
-    else if (lsb_ready&&lsb_rob_index==rf_to_iu_rs2_depend) issue_val2=lsb_val;
-    else if (rs_ready&&rs_rob_index==rf_to_iu_rs2_depend) issue_val2=rs_val;
-    else issue_rs2_depend=rf_to_iu_rs2_depend;
+    else if (lsb_ready&&lsb_rob_index==rf_to_iu_depend2) issue_val2=lsb_val;
+    else if (rs_ready&&rs_rob_index==rf_to_iu_depend2) issue_val2=rs_val;
+    else issue_depend2=rf_to_iu_depend2;
 
     case (opcode)
       `OPCODE_LUI:begin
         issue_rs_ready=1;
         issue_op_id=`OP_LUI;
-        issue_rs1_depend=0;
-        issue_rs2_depend=0;
+        issue_depend1=0;
+        issue_depend2=0;
         issue_val1={inst[31:12],12'b0};
         issue_val2=0;
       end
       `OPCODE_AUIPC:begin
         issue_rs_ready=1;
         issue_op_id=`OP_AUIPC;
-        issue_rs1_depend=0;
-        issue_rs2_depend=0;
+        issue_depend1=0;
+        issue_depend2=0;
         issue_val1={inst[31:12],12'b0};
         issue_val2=0;
       end
       `OPCODE_JAL:begin
         issue_rs_ready=1;
         issue_op_id=`OP_JAL;
-        issue_rs1_depend=0;
-        issue_rs2_depend=0;
+        issue_depend1=0;
+        issue_depend2=0;
         issue_offset={{12{inst[31]}}, inst[19:12], inst[20], inst[30:21],1'b0};
         pc_jump=pc+issue_offset;
       end
       `OPCODE_JALR: begin
         issue_rs_ready=1;
         issue_op_id=`OP_JALR;
-        issue_rs2_depend=0;
+        issue_depend2=0;
         issue_offset=imm_I;
         pc_jump=pc+4;
         //optimize: stall=1;
@@ -173,12 +173,12 @@ module InstUnit #(parameter ROB_WIDTH
       `OPCODE_B: begin
         issue_rs_ready=1;
         case (sub_opcode)
-          3'b000:issue_op_id=OP_BEQ;
-          3'b001:issue_op_id=OP_BNE;
-          3'b100:issue_op_id=OP_BLT;
-          3'b101:issue_op_id=OP_BGE;
-          3'b110:issue_op_id=OP_BLTU;
-          3'b111:issue_op_id=OP_BGEU;
+          3'b000:issue_op_id=`OP_BEQ;
+          3'b001:issue_op_id=`OP_BNE;
+          3'b100:issue_op_id=`OP_BLT;
+          3'b101:issue_op_id=`OP_BGE;
+          3'b110:issue_op_id=`OP_BLTU;
+          3'b111:issue_op_id=`OP_BGEU;
         endcase
         issue_rd_id=0;
         issue_offset=imm_B;
@@ -187,57 +187,57 @@ module InstUnit #(parameter ROB_WIDTH
       `OPCODE_L:begin
         issue_lsb_ready=1;
         case (sub_opcode)
-          3'b000:issue_op_id=OP_LB;
-          3'b001:issue_op_id=OP_LH;
-          3'b010:issue_op_id=OP_LW;
-          3'b100:issue_op_id=OP_LBU;
-          3'b101:issue_op_id=OP_LHU;
+          3'b000:issue_op_id=`OP_LB;
+          3'b001:issue_op_id=`OP_LH;
+          3'b010:issue_op_id=`OP_LW;
+          3'b100:issue_op_id=`OP_LBU;
+          3'b101:issue_op_id=`OP_LHU;
         endcase
-        issue_rs2_depend=0;
-        issue_offset=imm_L;
+        issue_depend2=0;
+        issue_offset=imm_I;
       end
       `OPCODE_S:begin
         issue_lsb_ready=1;
         case (sub_opcode)
-          3'b000:issue_op_id=OP_SB;
-          3'b001:issue_op_id=OP_SH;
-          3'b010:issue_op_id=OP_SW;
+          3'b000:issue_op_id=`OP_SB;
+          3'b001:issue_op_id=`OP_SH;
+          3'b010:issue_op_id=`OP_SW;
         endcase
         issue_rd_id=0;
         issue_offset=imm_S;
       end
       `OPCODE_I:begin
         issue_rs_ready=1;
-        issue_rs2_depend=0;
+        issue_depend2=0;
         issue_val2=imm_I;
         case (sub_opcode)
-          3'b000:issue_op_id=OP_ADDI;
+          3'b000:issue_op_id=`OP_ADDI;
           3'b001:begin
-            issue_op_id=OP_SLLI;
+            issue_op_id=`OP_SLLI;
             issue_val2=imm_shamt;
           end
-          3'b010:issue_op_id=OP_SLTI;
-          3'b011:issue_op_id=OP_SLTIU;
-          3'b100:issue_op_id=OP_XORI;
+          3'b010:issue_op_id=`OP_SLTI;
+          3'b011:issue_op_id=`OP_SLTIU;
+          3'b100:issue_op_id=`OP_XORI;
           3'b101: begin
-            issue_op_id=inst[30]==0?OP_SRLI:OP_SRAI;
+            issue_op_id=inst[30]==0?`OP_SRLI:`OP_SRAI;
             issue_val2=imm_shamt;
           end
-          3'b110:issue_op_id=OP_ORI;
-          3'b111:issue_op_id=OP_ANDI;
+          3'b110:issue_op_id=`OP_ORI;
+          3'b111:issue_op_id=`OP_ANDI;
         endcase
       end
       `OPCODE_R:begin
         issue_rs_ready=1;
         case (sub_opcode)
-          3'b000:issue_op_id=inst[30]==0?OP_ADD:OP_SUB;
-          3'b001:issue_op_id=OP_SLL;
-          3'b010:issue_op_id=OP_SLT;
-          3'b011:issue_op_id=OP_SLTU;
-          3'b100:issue_op_id=OP_XOR;
-          3'b101:issue_op_id=inst[30]==0?OP_SRL:SRA;
-          3'b110:issue_op_id=OP_OR;
-          3'b111:issue_op_id=OP_AND;
+          3'b000:issue_op_id=inst[30]==0?`OP_ADD:`OP_SUB;
+          3'b001:issue_op_id=`OP_SLL;
+          3'b010:issue_op_id=`OP_SLT;
+          3'b011:issue_op_id=`OP_SLTU;
+          3'b100:issue_op_id=`OP_XOR;
+          3'b101:issue_op_id=inst[30]==0?`OP_SRL:`OP_SRA;
+          3'b110:issue_op_id=`OP_OR;
+          3'b111:issue_op_id=`OP_AND;
         endcase
       end
     endcase

@@ -1,6 +1,6 @@
 `include "consts.v"
 
-module LoadStoreBuffer#(parameter ROB_WIDTH,parameter LSB_WIDTH)(
+module LoadStoreBuffer#(parameter ROB_WIDTH=4,parameter LSB_WIDTH=4)(
   input wire                      clk_in,
   input wire                      rst_in,
   input wire                      rdy_in,
@@ -10,9 +10,9 @@ module LoadStoreBuffer#(parameter ROB_WIDTH,parameter LSB_WIDTH)(
   input wire issue_lsb_ready,
   input wire [ROB_WIDTH-1:0] issue_rob_index,
   input wire [31:0] issue_val1, // val1 and val2 might be immediates
-  input wire [ROB_WIDTH-1:0] issue_rs1_depend,
+  input wire [ROB_WIDTH-1:0] issue_depend1,
   input wire [31:0] issue_val2,
-  input wire [ROB_WIDTH-1:0] issue_rs2_depend,
+  input wire [ROB_WIDTH-1:0] issue_depend2,
   input wire [5:0] issue_op_id,
   input wire [6:0] issue_opcode,
   input wire [31:0] issue_offset,
@@ -33,7 +33,7 @@ module LoadStoreBuffer#(parameter ROB_WIDTH,parameter LSB_WIDTH)(
   output reg [31:0] lsb_to_mc_data,//store
   input wire [31:0] mc_to_lsb_data,//load
   input wire mc_to_lsb_ready
-)
+);
 
   parameter LSB_SIZE=2**LSB_WIDTH;
   reg [LSB_WIDTH-1:0] head, tail; // (head,tail]
@@ -53,33 +53,34 @@ module LoadStoreBuffer#(parameter ROB_WIDTH,parameter LSB_WIDTH)(
 
   reg [5:0] cur_op_id;
 
+  integer i;
   always@(posedge clk_in) begin
     if (rst_in||clr_in)begin
       head<=1;
       tail<=1;
       lsb_ready<=0;
-      waiting<=0;
     end
+
     else if (rdy_in) begin
       if (rs_ready) begin
-        for(int i=0;i<LSB_SIZE;i=i+1)begin
-          if (busy[i]&&depend1[i]==rs_rob_index) begin
+        for(i=1;i<LSB_SIZE;i=i+1)begin
+          if (depend1[i]==rs_rob_index) begin
             val1[i]<=rs_val;
             depend1[i]<=0;
           end
-          if (busy[i]&&depend2[i]==rs_rob_index) begin
+          if (depend2[i]==rs_rob_index) begin
             val2[i]<=rs_val;
             depend2[i]<=0;
           end
         end
       end
       if (lsb_ready) begin
-        for(int i=0;i<LSB_SIZE;i=i+1)begin
-          if (busy[i]&&depend1[i]==lsb_rob_index) begin
+        for(i=1;i<LSB_SIZE;i=i+1)begin
+          if (depend1[i]==lsb_rob_index) begin
             val1[i]<=lsb_val;
             depend1[i]<=0;
           end
-          if (busy[i]&&depend2[i]==lsb_rob_index) begin
+          if (depend2[i]==lsb_rob_index) begin
             val2[i]<=lsb_val;
             depend2[i]<=0;
           end
@@ -95,9 +96,8 @@ module LoadStoreBuffer#(parameter ROB_WIDTH,parameter LSB_WIDTH)(
         val2[next_tail]<=issue_val2;
         depend2[next_tail]<=issue_depend2;
         offset[next_tail]<=issue_offset;
-        pc[next_tail]<=issue_pc;
         rob_index[next_tail]<=issue_rob_index;
-        tail<=text_tail;
+        tail<=next_tail;
       end
 
       if (!lsb_to_mc_ready) begin

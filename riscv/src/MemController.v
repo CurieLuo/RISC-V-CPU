@@ -23,7 +23,6 @@ module MemController (
   input wire [1:0] lsb_to_mc_len, //1,2,0
   input wire [31:0] lsb_to_mc_addr,
   input wire [31:0] lsb_to_mc_data,//store
-  output reg [31:0] mc_to_lsb_data,//load
   output reg mc_to_lsb_ready
 );
 
@@ -52,7 +51,8 @@ module MemController (
           mc_to_mem_addr<=0;
 
           if (lsb_to_mc_ready) begin
-            state<={1,lsb_to_mc_op};//load:0,store:1
+            //TODO
+            state<=2'b10|lsb_to_mc_op;//load:0,store:1
             mc_to_mem_addr<=lsb_to_mc_addr;
             mc_to_mem_wr<=lsb_to_mc_op;
             if (lsb_to_mc_op) mc_din<=lsb_to_mc_data;
@@ -111,16 +111,16 @@ module MemController (
           if (mc_to_mem_addr[17:16]!=2'b11||!io_buffer_full) begin
           case (byte_index)
           2'b00:begin
-            mem_to_mc_dout<=mc_din[7:0];
+            mc_to_mem_dout<=mc_din[7:0];
           end
           2'b01:begin
-            mem_to_mc_din<=mc_din[15:8];
+            mc_to_mem_dout<=mc_din[15:8];
           end
           2'b10:begin
-            mem_to_mc_din<=mc_din[23:16];
+            mc_to_mem_dout<=mc_din[23:16];
           end
           2'b11:begin
-            mem_to_mc_din<=mc_din[31:24];
+            mc_to_mem_dout<=mc_din[31:24];
           end
           endcase
           if (byte_index+1==lsb_to_mc_len) begin

@@ -1,17 +1,17 @@
 `include "consts.v"
 
-module ReorderBuffer #(parameter ROB_WIDTH) (
+module ReorderBuffer #(parameter ROB_WIDTH=4) (
   input wire                      clk_in,
   input wire                      rst_in,
   input wire                      rdy_in,
   output reg clr_in,
-  output reg rob_full,
-  output reg rob_new_index,
+  output wire rob_full,
+  output wire [ROB_WIDTH-1:0] rob_new_index,
 
-  input wire [ROB_WIDTH-1:0] iu_to_rob_rs1_depend,
+  input wire [ROB_WIDTH-1:0] iu_to_rob_depend1,
   output wire rob_to_iu_rs1_ready,
   output wire [31:0] rob_to_iu_val1,
-  input wire [ROB_WIDTH-1:0] iu_to_rob_rs2_depend,
+  input wire [ROB_WIDTH-1:0] iu_to_rob_depend2,
   output wire rob_to_iu_rs2_ready,
   output wire [31:0] rob_to_iu_val2,
   output reg [31:0] rob_to_iu_actual_pc,
@@ -59,10 +59,10 @@ module ReorderBuffer #(parameter ROB_WIDTH) (
   assign rob_full = next_tail==head;
   wire rob_empty = tail==head;
   assign rob_new_index=next_tail;
-  assign rob_to_iu_rs1_ready=ready[iu_to_rob_rs1_depend];
-  assign rob_to_iu_val1=val[iu_to_rob_rs1_depend];
-  assign rob_to_iu_rs2_ready=ready[iu_to_rob_rs2_depend];
-  assign rob_to_iu_val2=val[iu_to_rob_rs2_depend];
+  assign rob_to_iu_rs1_ready=ready[iu_to_rob_depend1];
+  assign rob_to_iu_val1=val[iu_to_rob_depend1];
+  assign rob_to_iu_rs2_ready=ready[iu_to_rob_depend2];
+  assign rob_to_iu_val2=val[iu_to_rob_depend2];
 
   always @(posedge clk_in) begin
     if (rst_in||clr_in) begin

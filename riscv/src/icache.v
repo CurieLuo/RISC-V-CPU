@@ -29,9 +29,9 @@ module ICache#(
   reg [RAM_ADDR_WIDTH-1:ICACHE_WIDTH] tag [ICACHE_SET_SIZE-1:0];
   reg [31:0] data [ICACHE_SET_SIZE-1:0];
 
-  wire hit = valid[iu_to_ic_pc[ICACHE_WIDTH-1:2]]&&tag[ICACHE_WIDTH-1:2]==iu_to_ic_pc[RAM_ADDR_WIDTH-1:ICACHE_WIDTH];
+  wire hit = valid[iu_to_ic_pc[ICACHE_WIDTH-1:2]]&&tag[iu_to_ic_pc[ICACHE_WIDTH-1:2]]==iu_to_ic_pc[RAM_ADDR_WIDTH-1:ICACHE_WIDTH];
   assign ic_to_iu_ready = hit||mc_to_ic_ready&&ic_to_mc_pc==iu_to_ic_pc; // TODO
-  assign ic_to_iu_inst = hit?data[iu_to_ic_pc[ICATCH_WIDTH-1:2]]:mc_to_ic_inst;
+  assign ic_to_iu_inst = hit?data[iu_to_ic_pc[ICACHE_WIDTH-1:2]]:mc_to_ic_inst;
 
   integer i;
   always @(posedge clk_in) begin
@@ -44,7 +44,7 @@ module ICache#(
       if (!hit) begin
         if (ic_to_iu_ready) begin // TODO ic_to_mc_ready && ~mc_to_ic_ready
           valid[iu_to_ic_pc[ICACHE_WIDTH-1:2]]<=1;
-          tag[iu_to_ic_pc[ICACHE_WIDTH-1:2]]<=iu_to_ic_pc
+          tag[iu_to_ic_pc[ICACHE_WIDTH-1:2]]<=iu_to_ic_pc;
           data[iu_to_ic_pc[ICACHE_WIDTH-1:2]]<=mc_to_ic_inst;
           ic_to_mc_ready<=0;
         end
